@@ -1,0 +1,78 @@
+package com.terrobytes.cybermanaver2.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.terrobytes.cybermanaver2.ui.composable.drs.BouttonAction
+import com.terrobytes.cybermanaver2.ui.composable.drs.CarteAnalyseur
+import com.terrobytes.cybermanaver2.ui.composable.drs.CarteRouteur
+import com.terrobytes.cybermanaver2.ui.composable.drs.TitreDetecteur
+import com.terrobytes.cybermanaver2.viewmodel.RouterViewModel
+
+@Preview
+@Composable
+fun DetectionRouteurScreen(viewModel: RouterViewModel = viewModel { RouterViewModel() }) {
+
+    val state = viewModel.state.collectAsState().value
+
+    Scaffold(
+        topBar = {
+            TitreDetecteur(
+                modifier = Modifier
+                    .background(Color(0xFF0B1319))
+                    .statusBarsPadding()
+            )
+        },
+        bottomBar = {
+            BouttonAction(
+                onConnectClick = {viewModel.connect()},
+                onRefreshClick = { viewModel.startScan() },
+                onManualConnectClick = {},
+                isConnecting = state.isScanning,
+                hasSelection = state.selectedRouter != null,
+                refreshEnabled = !state.isScanning,
+                modifier = Modifier.navigationBarsPadding()
+            )
+        }
+    ) { innerPadding ->
+
+
+        Column(
+            Modifier
+                .background(Color(0xFF0B1319))
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+
+            CarteAnalyseur(
+                isScanning = state.isScanning,
+                progress = state.progress,
+                total = state.total,
+                baseIp = state.baseIp,
+            )
+            LazyColumn {
+                items(state.routers) { router ->
+                    CarteRouteur(
+                        routeur = router,
+                        isSelected = router == state.selectedRouter,
+                        onSelectClick = {
+                            viewModel.selectRouter(router)
+                        }
+                    )
+                }
+            }
+            Text(state.result)
+        }
+
+    }
+
+}
