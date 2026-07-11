@@ -6,21 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -35,21 +23,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Carte de connexion admin, affichée uniquement lors de la toute première
- * connexion à un routeur. Une fois les identifiants validés, ils sont
- * enregistrés (RouterViewModel.submitLogin) et cette carte ne réapparaît
- * plus tant qu'ils restent valides.
+ * Carte de connexion manuelle à un routeur MikroTik, affichée uniquement lorsque l'utilisateur veux une connexion manuelle
+ *  à un routeur.
  */
 @Preview
 @Composable
-fun CardAuthentification(
-    routerName: String = "",
+fun CardManuallyConnexion(
+    modifier: Modifier = Modifier,
     isLoading: Boolean = false,
     errorMessage: String? = null,
-    onSubmit: (username: String, password: String) -> Unit = { _, _ -> },
-    onCancel: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onSubmit: (addressIp: String, username: String, password: String) -> Unit = { _, _, _ -> },
+    onCancel: () -> Unit = {}
 ) {
+    var adressIp by remember { mutableStateOf("") }
+    val ipRegex = "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$".toRegex()
+
     var username by remember { mutableStateOf("admin") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -73,9 +61,38 @@ fun CardAuthentification(
         Spacer(modifier = Modifier.height(6.dp))
 
         Text(
-            text = "Première connexion à $routerName. Vos identifiants seront enregistrés pour les prochaines fois.",
+            text = "Connexion manuelle au routeur MikroTik.",
             color = Color(0xFF8E9297),
             fontSize = 13.sp
+        )
+
+        OutlinedTextField(
+            value = adressIp,
+            onValueChange = {
+                if (isValidPartialIp(it)) {
+                    adressIp = it
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading,
+            singleLine = true,
+            label = { Text("Adresse IP") },
+            leadingIcon = { Icon(Icons.Filled.Public, contentDescription = null) },
+            shape = RoundedCornerShape(14.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = fieldBg,
+                unfocusedContainerColor = fieldBg,
+                disabledContainerColor = fieldBg,
+                focusedBorderColor = accent,
+                unfocusedBorderColor = borderColor,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                cursorColor = accent,
+                focusedLabelColor = accent,
+                unfocusedLabelColor = Color(0xFF8E9297),
+                focusedLeadingIconColor = accent,
+                unfocusedLeadingIconColor = Color(0xFF5F6368)
+            )
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -158,7 +175,7 @@ fun CardAuthentification(
                 .background(accent, shape = RoundedCornerShape(16.dp))
                 .clip(RoundedCornerShape(16.dp))
                 .then(
-                    if (!isLoading) Modifier.clickable { onSubmit(username, password) } else Modifier
+                    if (!isLoading) Modifier.clickable { onSubmit(adressIp, username, password) } else Modifier
                 ),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
@@ -184,4 +201,36 @@ fun CardAuthentification(
                 .clickable(enabled = !isLoading) { onCancel() }
         )
     }
+}
+
+private fun isValidPartialIp(input: String): Boolean {
+
+    if (input.isEmpty()) return true
+
+    if (!input.matches(Regex("[0-9.]*")))
+        return false
+
+    val parts = input.split(".")
+
+    // Maximum 4 blocs
+    if (parts.size > 4)
+        return false
+
+    for (part in parts) {
+
+        // Pendant la saisie on accepte un bloc vide
+        if (part.isEmpty())
+            continue
+
+        // Maximum 3 chiffres
+        if (part.length > 3)
+            return false
+
+        val value = part.toInt()
+
+        if (value !in 0..255)
+            return false
+    }
+
+    return true
 }

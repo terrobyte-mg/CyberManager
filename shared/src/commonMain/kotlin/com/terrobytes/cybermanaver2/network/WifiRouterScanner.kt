@@ -2,18 +2,27 @@ package com.terrobytes.cybermanaver2.network
 
 import com.terrobytes.cybermanaver2.models.RouterDiscoveryMethod
 import com.terrobytes.cybermanaver2.models.Routeur
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import java.net.InetSocketAddress
-import java.net.Socket
-import java.util.*
+import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 
-class WifiRouterScanner {
+/**
+ * Scans a /24 subnet for Mikrotik devices.
+ *
+ * This used to be expect/actual with two near-identical implementations that
+ * only differed by which `isMikrotik` they delegated to - and `isMikrotik` is
+ * already its own expect/actual function. So this object doesn't need to be
+ * platform-specific at all; it just calls the common `isMikrotik`.
+ */
+object WifiRouterScanner {
 
     suspend fun scanWifi(
-        baseIp: String,
+        networkTarget: NetworkTarget,
         onProgress: (Int) -> Unit
     ): List<Routeur> = coroutineScope {
 
@@ -21,43 +30,28 @@ class WifiRouterScanner {
         val semaphore = Semaphore(50)
         val completed = AtomicInteger(0)
 
-        val jobs = (1 .. 254).map { i ->
-
-            val ip = "$baseIp.$i"
+        val jobs = (1..254).map { i ->
+            val ip = "${networkTarget.baseIp}.$i"
 
             async(Dispatchers.IO) {
                 semaphore.withPermit {
-                    if (isMikrotik(ip)) {
+                    if (isMikrotik(networkTarget, ip)) {
                         results.add(
                             Routeur(
                                 ipAddress = ip,
-                                name = "MikroTik",
+                                name = "Mikrotik",
                                 isOnline = true,
-                                source = RouterDiscoveryMethod.SCAN_WIFI
+                                source = RouterDiscoveryMethod.SCAN_WIFI,
+                                networkTarget = networkTarget,
                             )
                         )
                     }
-
-                    val progress = completed.incrementAndGet()
-                    onProgress(progress)
+                    onProgress(completed.incrementAndGet())
                 }
             }
         }
 
         jobs.awaitAll()
         results
-    }
-
-    private suspend fun isMikrotik(ip: String): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                Socket().use { socket ->
-                    socket.connect(InetSocketAddress(ip, 8291), 150)
-                    true
-                }
-            } catch (_: Exception) {
-                false
-            }
-        }
     }
 }

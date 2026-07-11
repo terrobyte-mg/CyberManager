@@ -25,9 +25,9 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun BouttonAction(
     modifier            : Modifier = Modifier,
-    onConnectClick      : () -> Unit,
-    onRefreshClick      : () -> Unit,
-    onManualConnectClick: () -> Unit,
+    onConnectClick      : () -> Unit = {},
+    onRefreshClick      : () -> Unit = {},
+    onManualConnectClick: () -> Unit = {},
     isConnecting        : Boolean = false,
     hasSelection        : Boolean = false,
     refreshEnabled      : Boolean,

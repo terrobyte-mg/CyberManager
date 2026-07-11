@@ -17,17 +17,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.terrobytes.cybermanaver2.models.RouterDiscoveryMethod
 import com.terrobytes.cybermanaver2.models.Routeur
 
-
+@Preview
 @Composable
 fun CarteRouteur(
-    routeur: Routeur,
-    isSelected: Boolean,
-    onSelectClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    routeur: Routeur = Routeur(ipAddress = "127.0.0.1", name = "Cyber Manaver", source = RouterDiscoveryMethod.SCAN_WIFI, networkTarget = null),
+    isSelected: Boolean = false,
+    onSelectClick: () -> Unit = {}
 ) {
     val borderColor = if (isSelected) Color(0xFF1A8CFF) else Color.Transparent
 

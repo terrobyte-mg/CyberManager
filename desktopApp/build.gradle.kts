@@ -13,6 +13,10 @@ dependencies {
     implementation(libs.kotlinx.coroutinesSwing)
 
     implementation(libs.compose.uiToolingPreview)
+
+    implementation(libs.decompose)
+    implementation(libs.decompose.extensions.compose)
+
 }
 
 compose.desktop {

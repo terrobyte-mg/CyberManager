@@ -23,11 +23,11 @@ import androidx.compose.ui.unit.sp
 @Preview
 @Composable
 fun CarteAnalyseur(
+    modifier: Modifier = Modifier,
     isScanning: Boolean = false,
     progress: Int = 0,
     total: Int = 0,
-    baseIp: String = "",
-    modifier: Modifier = Modifier
+    baseIp: String = ""
 ) {
     val progressRatio = if (total > 0) progress.toFloat() / total.toFloat() else 0f
     val percentage = (progressRatio * 100).toInt()

@@ -9,5 +9,8 @@ data class RouterUiState(
     val selectedRouter: Routeur? = null,
     val isConnecting: Boolean = false,
     val result: String = "",
-    val error: String? = null
+    val error: String? = null,
+    val isAuthenticated: Boolean = false,
+    val isLoggingIn: Boolean = false,
+    val loginError: String? = null
 )

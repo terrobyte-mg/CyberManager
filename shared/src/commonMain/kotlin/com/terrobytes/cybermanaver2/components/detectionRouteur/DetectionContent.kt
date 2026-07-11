@@ -1,4 +1,4 @@
-package com.terrobytes.cybermanaver2.ui
+package com.terrobytes.cybermanaver2.components.detectionRouteur
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -7,22 +7,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.terrobytes.cybermanaver2.ui.composable.drs.BouttonAction
 import com.terrobytes.cybermanaver2.ui.composable.drs.CarteAnalyseur
 import com.terrobytes.cybermanaver2.ui.composable.drs.CarteRouteur
 import com.terrobytes.cybermanaver2.ui.composable.drs.TitreDetecteur
-import com.terrobytes.cybermanaver2.viewmodel.RouterViewModel
 
-@Preview
 @Composable
-fun DetectionRouteurScreen(viewModel: RouterViewModel = viewModel { RouterViewModel() }) {
+fun DetectionContent(
+    component: DetectionComponent
+) {
 
-    val state = viewModel.state.collectAsState().value
+    val state by component.state.subscribeAsState()
 
     Scaffold(
         topBar = {
@@ -34,9 +33,9 @@ fun DetectionRouteurScreen(viewModel: RouterViewModel = viewModel { RouterViewMo
         },
         bottomBar = {
             BouttonAction(
-                onConnectClick = {viewModel.connect()},
-                onRefreshClick = { viewModel.startScan() },
-                onManualConnectClick = {},
+                onConnectClick = { component.connect() },
+                onRefreshClick = { component.startScan() },
+                onManualConnectClick = { component.connectManually() },
                 isConnecting = state.isScanning,
                 hasSelection = state.selectedRouter != null,
                 refreshEnabled = !state.isScanning,
@@ -65,11 +64,12 @@ fun DetectionRouteurScreen(viewModel: RouterViewModel = viewModel { RouterViewMo
                         routeur = router,
                         isSelected = router == state.selectedRouter,
                         onSelectClick = {
-                            viewModel.selectRouter(router)
+                            component.selectRouter(router)
                         }
                     )
                 }
             }
+
             Text(state.result)
         }
 

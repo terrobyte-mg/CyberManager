@@ -2,13 +2,12 @@ package com.terrobytes.cybermanaver2
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
-import com.terrobytes.cybermanaver2.ui.DetectionRouteurScreen
+import com.terrobytes.cybermanaver2.root.RootComponent
+import com.terrobytes.cybermanaver2.root.RootContent
 
 @Composable
-@Preview
-fun App() {
+fun App(root: RootComponent) {
     MaterialTheme {
-        DetectionRouteurScreen()
+        RootContent(component = root)
     }
 }

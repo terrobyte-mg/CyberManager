@@ -18,6 +18,9 @@ dependencies {
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
+
+    implementation(libs.decompose)
+    implementation(libs.decompose.extensions.compose)
 }
 
 android {

@@ -1,5 +1,7 @@
 package com.terrobytes.cybermanaver2.models
 
+import com.terrobytes.cybermanaver2.network.NetworkTarget
+
 data class Routeur(
     val ipAddress: String,
     val macAddress: String? = null,
@@ -7,5 +9,6 @@ data class Routeur(
     val model: String? = null,
     val version: String? = null,
     val isOnline: Boolean = false,
-    val source: RouterDiscoveryMethod
+    val source: RouterDiscoveryMethod,
+    val networkTarget: NetworkTarget?
 )
