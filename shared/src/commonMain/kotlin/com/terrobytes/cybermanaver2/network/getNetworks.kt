@@ -27,5 +27,17 @@ expect suspend fun isMikrotik(networkTarget: NetworkTarget, ip: String): Boolean
  * (Wi-Fi + mobile data) so traffic doesn't leak out the wrong one.
  * When null (manual connections, or a NetworkTarget that didn't survive
  * navigation), a plain unbound socket is used instead.
+ *
+ * [readTimeoutMs] matters a lot more than it looks: without it, a read()
+ * blocks forever if the peer dies without a clean TCP close (e.g. a router
+ * rebooting abruptly mid-command) - exactly what happens when we trigger
+ * /system/reset-configuration. Without a timeout, that call hangs the
+ * calling coroutine indefinitely instead of failing so the caller can move on.
  */
-expect fun openSocket(networkTarget: NetworkTarget?, host: String, port: Int, timeoutMs: Int = 5000): Socket
+expect fun openSocket(
+    networkTarget: NetworkTarget?,
+    host: String,
+    port: Int,
+    timeoutMs: Int = 5000,
+    readTimeoutMs: Int = 10000,
+): Socket

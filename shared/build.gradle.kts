@@ -43,6 +43,7 @@ kotlin {
             implementation(libs.material.icons.extended)
             implementation(libs.decompose)
             implementation(libs.decompose.extensions.compose)
+            implementation(libs.commons.net)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -151,6 +151,12 @@ class MikrotikRawClient(private val socket: Socket) {
         return read()
     }
 
+    /** For commands that need parameters, e.g. listOf("/export", "file=name"). */
+    fun execute(words: List<String>): String {
+        writeSentence(words)
+        return read()
+    }
+
     fun close() {
         try {
             socket.close()

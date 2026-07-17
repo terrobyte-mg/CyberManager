@@ -11,26 +11,34 @@ package com.terrobytes.cybermanaver2.storage
  * we might be about to reset - closer to a "real" restore, but only usable
  * with `/system backup load` (reboot required, RouterOS-version sensitive).
  */
-class RouterBackup(
+data class RouterBackup(
     val textExport: String,
     val binaryBackup: ByteArray?,
+    val binaryBackupPassword: String?,
     val routerIdentity: String,
     val takenAt: Long,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is RouterBackup) return false
-        return textExport == other.textExport &&
-                binaryBackup.contentEquals(other.binaryBackup) &&
-                routerIdentity == other.routerIdentity &&
-                takenAt == other.takenAt
+        if (javaClass != other?.javaClass) return false
+
+        other as RouterBackup
+
+        if (takenAt != other.takenAt) return false
+        if (textExport != other.textExport) return false
+        if (!binaryBackup.contentEquals(other.binaryBackup)) return false
+        if (binaryBackupPassword != other.binaryBackupPassword) return false
+        if (routerIdentity != other.routerIdentity) return false
+
+        return true
     }
 
     override fun hashCode(): Int {
-        var result = textExport.hashCode()
+        var result = takenAt.hashCode()
+        result = 31 * result + textExport.hashCode()
         result = 31 * result + (binaryBackup?.contentHashCode() ?: 0)
+        result = 31 * result + binaryBackupPassword.hashCode()
         result = 31 * result + routerIdentity.hashCode()
-        result = 31 * result + takenAt.hashCode()
         return result
     }
 }

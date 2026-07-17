@@ -72,8 +72,15 @@ actual suspend fun isMikrotik(networkTarget: NetworkTarget, ip: String): Boolean
     }
 }
 
-actual fun openSocket(networkTarget: NetworkTarget?, host: String, port: Int, timeoutMs: Int): Socket {
+actual fun openSocket(
+    networkTarget: NetworkTarget?,
+    host: String,
+    port: Int,
+    timeoutMs: Int,
+    readTimeoutMs: Int,
+): Socket {
     val socket = networkTarget?.network?.socketFactory?.createSocket() ?: Socket()
     socket.connect(InetSocketAddress(host, port), timeoutMs)
+    socket.soTimeout = readTimeoutMs
     return socket
 }

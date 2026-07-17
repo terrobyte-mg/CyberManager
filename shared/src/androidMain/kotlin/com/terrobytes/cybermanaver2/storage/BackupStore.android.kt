@@ -18,6 +18,7 @@ actual class BackupStore actual constructor() {
 
     private val exportFile get() = File(backupDir, "export.rsc")
     private val binaryFile get() = File(backupDir, "binary.backup")
+    private val binaryPasswordFile = File(backupDir, "binary.password")
 
     actual fun saveBackup(backup: RouterBackup) {
         backupDir.mkdirs()
@@ -27,6 +28,12 @@ actual class BackupStore actual constructor() {
             binaryFile.writeBytes(backup.binaryBackup)
         } else if (binaryFile.exists()) {
             binaryFile.delete()
+        }
+
+        if (backup.binaryBackupPassword != null) {
+            binaryFile.writeBytes(backup.binaryBackupPassword.toByteArray(Charsets.UTF_8))
+        } else if (binaryPasswordFile.exists()) {
+            binaryPasswordFile.delete()
         }
 
         prefs.edit {
@@ -44,6 +51,9 @@ actual class BackupStore actual constructor() {
         return RouterBackup(
             textExport = exportFile.readText(Charsets.UTF_8),
             binaryBackup = if (binaryFile.exists()) binaryFile.readBytes() else null,
+            binaryBackupPassword = if (binaryPasswordFile.exists()) {
+                String(binaryFile.readBytes(), Charsets.UTF_8)
+            } else null,
             routerIdentity = identity,
             takenAt = takenAt,
         )
@@ -52,6 +62,7 @@ actual class BackupStore actual constructor() {
     actual fun clearBackup() {
         exportFile.delete()
         binaryFile.delete()
+        binaryPasswordFile.delete()
         prefs.edit { clear() }
     }
 
