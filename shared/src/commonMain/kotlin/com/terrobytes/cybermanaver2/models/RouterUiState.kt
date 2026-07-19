@@ -12,5 +12,6 @@ data class RouterUiState(
     val error: String? = null,
     val isAuthenticated: Boolean = false,
     val isLoggingIn: Boolean = false,
-    val loginError: String? = null
+    val loginError: String? = null,
+    val commandError: String? = null,
 )
