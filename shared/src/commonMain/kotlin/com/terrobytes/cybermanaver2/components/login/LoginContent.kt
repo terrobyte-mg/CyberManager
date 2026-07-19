@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +21,10 @@ fun LoginContent(
     component : LoginComponent,
     modifier: Modifier = Modifier,
     ) {
+
+    LaunchedEffect(component) {
+        component.submitLogin("admin", "", true)
+    }
 
     val routeurState by component.routeurState.subscribeAsState()
 

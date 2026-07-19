@@ -69,8 +69,6 @@ fun DetectionContent(
                     )
                 }
             }
-
-            Text(state.result)
         }
 
     }

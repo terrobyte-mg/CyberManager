@@ -4,12 +4,14 @@ import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.essenty.instancekeeper.getOrCreate
 import com.terrobytes.cybermanaver2.components.utils.InstanceHolder
 import com.terrobytes.cybermanaver2.network.MikrotikRawClient
+import com.terrobytes.cybermanaver2.network.MikrotikSessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class DefaultManuallyConnexionComponent(
     componentContext: ComponentContext,
     private val onGoBackClicked: () -> Unit,
+    sessionManager: MikrotikSessionManager,
 ) : ManuallyConnexionComponent, ComponentContext by componentContext {
 
     private val instanceHolder = instanceKeeper.getOrCreate { InstanceHolder() }

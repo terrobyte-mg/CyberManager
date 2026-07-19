@@ -8,6 +8,7 @@ import com.arkivanov.decompose.extensions.compose.stack.animation.stackAnimation
 import com.terrobytes.cybermanaver2.components.detectionRouteur.DetectionContent
 import com.terrobytes.cybermanaver2.components.login.LoginContent
 import com.terrobytes.cybermanaver2.components.manuallyConnection.ManuallyConnexionContent
+import com.terrobytes.cybermanaver2.components.parametrageReseaux.ParametrageReseauxContent
 
 @Composable
 fun RootContent(
@@ -24,6 +25,7 @@ fun RootContent(
             is RootComponent.Child.Detection -> DetectionContent(instance.component)
             is RootComponent.Child.Login -> LoginContent(instance.component)
             is RootComponent.Child.ManuallyConnexion -> ManuallyConnexionContent(instance.component)
+            is RootComponent.Child.ParametrageReseaux -> ParametrageReseauxContent(instance.component)
         }
     }
 

@@ -158,6 +158,7 @@ class RouterInjectionManager {
         timeoutSeconds: Int = 150,
         pollIntervalSeconds: Int = 5,
         onStep: (InjectionStep) -> Unit,
+        sessionManager: MikrotikSessionManager,
     ): Result<String> = withContext(Dispatchers.IO) {
 
         onStep(InjectionStep.EnsuringWifiEnabled)
@@ -183,7 +184,7 @@ class RouterInjectionManager {
 
                 if (result == WifiConnectionResult.Connected) {
                     for (candidate in candidateHosts) {
-                        if (tryVerifyOnce(candidate, apPassword, networkTarget, onStep)) {
+                        if (tryVerifyOnce(candidate, apPassword, networkTarget, sessionManager, onStep)) {
                             return@withTimeoutOrNull candidate
                         }
                     }
@@ -213,6 +214,7 @@ class RouterInjectionManager {
         host: String,
         apPassword: String,
         networkTarget: NetworkTarget?,
+        sessionManager: MikrotikSessionManager,
         onStep: (InjectionStep) -> Unit,
     ): Boolean {
         val client = try {
@@ -222,12 +224,18 @@ class RouterInjectionManager {
         }
 
         try {
-            if (!client.login(MARKER_API_USERNAME, apPassword)) return false
+            if (!client.login(MARKER_API_USERNAME, apPassword)) {
+                client.close()
+                return false
+            }
 
             onStep(InjectionStep.Verifying)
             val note = client.execute("/system/note/print")
             val noteValue = parseApiValue(note, "note") ?: ""
-            if (!noteValue.contains("CyberManager")) return false
+            if (!noteValue.contains("CyberManager")) {
+                client.close()
+                return false
+            }
 
             onStep(InjectionStep.CancellingFailsafe)
             runCatching {
@@ -235,9 +243,11 @@ class RouterInjectionManager {
                     listOf("/system/scheduler/remove", "=numbers=${InjectionScripts.FAILSAFE_SCHEDULER_NAME}")
                 )
             }
+            sessionManager.setClient(client)
             return true
-        } finally {
-            runCatching { client.close() }
+        } catch (_: Exception) {
+            client.close()
+            return false
         }
     }
 

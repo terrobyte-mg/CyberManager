@@ -6,5 +6,5 @@ import com.terrobytes.cybermanaver2.models.RouterUiState
 interface LoginComponent {
     val routeurState : Value<RouterUiState>
     fun onBackClicked()
-    fun submitLogin(username: String, password: String)
+    fun submitLogin(username: String, password: String, test: Boolean = false)
 }
