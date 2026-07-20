@@ -9,8 +9,12 @@ import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.push
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.essenty.instancekeeper.getOrCreate
+import com.terrobytes.cybermanaver2.components.dashboard.DashboardComponent
+import com.terrobytes.cybermanaver2.components.dashboard.DefaultDashboardComponent
 import com.terrobytes.cybermanaver2.components.detectionRouteur.DefaultDetectionComponent
 import com.terrobytes.cybermanaver2.components.detectionRouteur.DetectionComponent
+import com.terrobytes.cybermanaver2.components.injectionParametre.DefaultInjectionParametreComponent
+import com.terrobytes.cybermanaver2.components.injectionParametre.InjectionParametreComponent
 import com.terrobytes.cybermanaver2.components.login.DefaultLoginComponent
 import com.terrobytes.cybermanaver2.components.login.LoginComponent
 import com.terrobytes.cybermanaver2.components.manuallyConnection.DefaultManuallyConnexionComponent
@@ -31,6 +35,8 @@ interface RootComponent {
         class Login(val component: LoginComponent) : Child()
         class ManuallyConnexion(val component: ManuallyConnexionComponent) : Child()
         class ParametrageReseaux(val component: ParametrageReseauxComponent) : Child()
+        class InjectionParametre(val component: InjectionParametreComponent) : Child()
+        class Dashboard(val component: DashboardComponent) : Child()
     }
 
 }
@@ -49,6 +55,22 @@ private sealed class Config {
 
     @Serializable
     data class ParametrageReseaux(val ssid24 : String, val ssid5 : String) : Config()
+
+    @Serializable
+    data class InjectionParameter(
+        val ssid24 : String,
+        val ssid5 : String,
+        val wifiPassword : String,
+        val adminCount : Int,
+        val lanBase : String,
+        val lanCidr : String,
+        val routerIp : String,
+        val dhcpPoolStart : String,
+        val dhcpPoolEnd : String
+    ) : Config()
+    
+    @Serializable
+    data class Dashboard(val host: String) : Config()
 
 }
 
@@ -126,6 +148,42 @@ class DefaultRootComponent(
                     ssid5 = config.ssid5,
                     componentContext = componentContext,
                     sessionManager = sessionManager,
+                    onBackClicked = { navigation.pop() },
+                    onContinueClicked = { template ->
+                        navigation.push(
+                            Config.InjectionParameter(
+                                ssid24 = template.ssid24,
+                                ssid5 = template.ssid5,
+                                wifiPassword = template.wifiPassword,
+                                adminCount = template.adminCount,
+                                lanBase = template.lanBase,
+                                lanCidr = template.lanCidr,
+                                routerIp = template.routerIp,
+                                dhcpPoolStart = template.dhcpPoolStart,
+                                dhcpPoolEnd = template.dhcpPoolEnd
+                            )
+                        )
+                    }
+                )
+            )
+
+            is Config.InjectionParameter -> RootComponent.Child.InjectionParametre(
+                DefaultInjectionParametreComponent(
+                    componentContext = componentContext,
+                    host = TODO(),
+                    adminUsername = TODO(),
+                    adminPassword = TODO(),
+                    template = TODO(),
+                    sessionManager = TODO(),
+                    wifiConnector = TODO(),
+                    onBackClicked = TODO(),
+                    onInjectionSuccess = TODO(),
+                )
+            )
+
+            is Config.Dashboard -> RootComponent.Child.Dashboard(
+                DefaultDashboardComponent(
+                    componentContext = componentContext,
                 )
             )
 

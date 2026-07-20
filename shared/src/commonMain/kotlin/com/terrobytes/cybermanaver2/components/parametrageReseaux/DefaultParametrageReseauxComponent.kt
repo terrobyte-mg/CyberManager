@@ -11,22 +11,22 @@ class DefaultParametrageReseauxComponent(
     ssid5: String,
     componentContext: ComponentContext,
     sessionManager: MikrotikSessionManager,
+    private val onBackClicked: () -> Unit,
+    private val onContinueClicked: (CyberTemplateParams) -> Unit,
 ) : ParametrageReseauxComponent, ComponentContext by componentContext {
 
     private val _templateState = MutableValue(
-        CyberTemplateParams(
-            ssid24 = ssid24,
-            ssid5 = ssid5
-        )
+        CyberTemplateParams(ssid24 = ssid24, ssid5 = ssid5)
     )
 
     override val templateState: Value<CyberTemplateParams> = _templateState
 
     override fun onContinue(template: CyberTemplateParams) {
-        TODO("Not yet implemented")
+        _templateState.value = template
+        onContinueClicked(template)
     }
 
     override fun onBack() {
-        TODO("Not yet implemented")
+        onBackClicked()
     }
 }

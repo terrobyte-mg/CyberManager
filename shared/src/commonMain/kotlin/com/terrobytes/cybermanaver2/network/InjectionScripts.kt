@@ -18,7 +18,7 @@ object InjectionScripts {
         apUsername: String,
         apPassword: String,
         rollbackFileName: String,
-        rollbackPassword: String,
+        rollbackPassword: String?,
         failsafeMinutes: Int = 5,
     ): String = buildString {
         appendLine(":delay 15s")
@@ -203,7 +203,7 @@ object InjectionScripts {
 
     private fun StringBuilder.appendFailsafe(
         rollbackFileName: String,
-        rollbackPassword: String,
+        rollbackPassword: String?,
         failsafeMinutes: Int,
     ) {
         val sanitizedFileName = if (rollbackFileName.endsWith(".backup")) rollbackFileName else "$rollbackFileName.backup"
@@ -213,7 +213,7 @@ object InjectionScripts {
         // 1. On crée d'abord le script de restauration (avec la politique 'test')
         appendLine("/system script add name=\"run-restore\" \\")
         appendLine("    policy=read,write,reboot,password,sensitive,policy,test \\")
-        appendLine("    source=\"/system backup load name=\\\"$sanitizedFileName\\\" password=\\\"${escape(rollbackPassword)}\\\"\"")
+        appendLine("    source=\"/system backup load name=\\\"$sanitizedFileName\\\" password=\\\"${escape(rollbackPassword ?: "")}\\\"\"")
         appendLine()
 
         // 2. On crée le scheduler qui exécute ce script après le délai imparti

@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.terrobytes.cybermanaver2.templates.CyberTemplateParams
 import com.terrobytes.cybermanaver2.ui.composable.colors.BgDeep
 
 /**
@@ -27,21 +28,20 @@ import com.terrobytes.cybermanaver2.ui.composable.colors.BgDeep
 @Preview
 @Composable
 fun TemplateContent(
-    ssid24: String = "WIFI 2.4",
-    ssid5: String = "WIFI 5",
+    templateParams: CyberTemplateParams = CyberTemplateParams(),
     onBack: () -> Unit = {},
-    onContinue: () -> Unit = {},
+    onContinue: (CyberTemplateParams) -> Unit = {},
 ) {
 
-    var ssid24 by remember { mutableStateOf(ssid24) }
-    var ssid5 by remember { mutableStateOf(ssid5) }
-    var wifiPassword by remember { mutableStateOf("") }
-    var adminCount by remember { mutableStateOf("3") }
+    var ssid24 by remember { mutableStateOf(templateParams.ssid24) }
+    var ssid5 by remember { mutableStateOf(templateParams.ssid5) }
+    var wifiPassword by remember { mutableStateOf(templateParams.wifiPassword) }
+    var adminCount by remember { mutableStateOf(templateParams.adminCount.toString()) }
 
-    var lanCidr by remember { mutableStateOf("192.168.88.0/24") }
-    var routerIp by remember { mutableStateOf("192.168.88.1") }
-    var dhcpStart by remember { mutableStateOf("192.168.88.10") }
-    var dhcpEnd by remember { mutableStateOf("192.168.88.254") }
+    var lanCidr by remember { mutableStateOf(templateParams.lanCidr) }
+    var routerIp by remember { mutableStateOf(templateParams.routerIp) }
+    var dhcpStart by remember { mutableStateOf(templateParams.dhcpPoolStart) }
+    var dhcpEnd by remember { mutableStateOf(templateParams.dhcpPoolEnd) }
 
     Scaffold(
         containerColor = BgDeep,
@@ -54,7 +54,19 @@ fun TemplateContent(
         bottomBar = {
             BarreActionsWizard(
                 onBack = onBack,
-                onContinue = onContinue,
+                onContinue = {
+                    val updatedParans = templateParams.copy(
+                        ssid24 = ssid24,
+                        ssid5 = ssid5,
+                        wifiPassword = wifiPassword,
+                        adminCount = adminCount.toInt(),
+                        lanCidr = lanCidr,
+                        routerIp = routerIp,
+                        dhcpPoolStart = dhcpStart,
+                        dhcpPoolEnd = dhcpEnd,
+                    )
+                    onContinue(updatedParans)
+                },
                 continueEnabled = ssid24.isNotBlank() && wifiPassword.length >= 8,
             )
         },

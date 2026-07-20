@@ -1,3 +1,4 @@
+// RouterBackupManager.kt
 package com.terrobytes.cybermanaver2.network
 
 import com.terrobytes.cybermanaver2.storage.BackupStore
@@ -6,10 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.security.SecureRandom
 
-/**
- * Progress states for [RouterBackupManager.backupRouter], meant to drive a
- * step-by-step status screen.
- */
 sealed class BackupStep {
     data object Connecting : BackupStep()
     data object ReadingIdentity : BackupStep()
@@ -23,41 +20,32 @@ sealed class BackupStep {
 
 private const val BACKUP_BASE_NAME = "cybermanager-backup"
 
-/**
- * Takes a full backup of a router's config before we touch anything
- * (injection, reset...). Never throws - every failure path reports
- * [BackupStep.Failed] and returns a [Result.failure] instead, so a caller
- * can show something sane to the user rather than crash.
- */
 class RouterBackupManager(
     private val backupStore: BackupStore = BackupStore(),
 ) {
 
+    /**
+     * Réutilise le client déjà connecté dans [sessionManager] (ouvert au
+     * login) au lieu d'en ouvrir un nouveau. FTP reste une connexion à part.
+     */
     suspend fun backupRouter(
-        networkTarget: NetworkTarget?,
         host: String,
         username: String,
         password: String,
+        sessionManager: MikrotikSessionManager,
         onStep: (BackupStep) -> Unit,
     ): Result<RouterBackup> = withContext(Dispatchers.IO) {
 
         onStep(BackupStep.Connecting)
 
-        val client = try {
-            MikrotikRawClient(networkTarget, host)
-        } catch (e: Exception) {
-            val msg = "Connexion impossible: ${e.message ?: e.toString()}"
-            onStep(BackupStep.Failed(msg))
-            return@withContext Result.failure(e)
-        }
-
-        try {
-            if (!client.login(username, password)) {
-                val msg = "Authentification refusée"
+        val client = sessionManager.client.value
+            ?: run {
+                val msg = "Aucune session active vers le routeur"
                 onStep(BackupStep.Failed(msg))
                 return@withContext Result.failure(IllegalStateException(msg))
             }
 
+        try {
             onStep(BackupStep.ReadingIdentity)
             val identity = readIdentity(client) ?: "routeur-inconnu"
 
@@ -91,8 +79,6 @@ class RouterBackupManager(
         } catch (e: Exception) {
             onStep(BackupStep.Failed(e.message ?: e.toString()))
             Result.failure(e)
-        } finally {
-            client.close()
         }
     }
 
@@ -111,8 +97,6 @@ class RouterBackupManager(
             val exportBytes = ftp.downloadFile("$fileBase.rsc")
                 ?: throw IllegalStateException("Fichier d'export introuvable sur le routeur")
 
-            // Binary backup is a nice-to-have on top of the text export, not
-            // required for it to count as a valid backup.
             val binaryBytes = ftp.downloadFile("$fileBase.backup")
 
             return exportBytes.toString(Charsets.UTF_8) to binaryBytes
@@ -126,7 +110,6 @@ class RouterBackupManager(
         return parseApiValue(raw, "name")
     }
 
-    /** Runs a command and throws immediately if RouterOS replies with !trap instead of silently continuing. */
     private fun runCommand(client: MikrotikRawClient, words: List<String>): String {
         val reply = client.execute(words)
         if (isApiTrap(reply)) {

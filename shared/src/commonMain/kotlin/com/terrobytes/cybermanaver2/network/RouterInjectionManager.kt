@@ -19,7 +19,6 @@ sealed class InjectionStep {
     data object CancellingFailsafe : InjectionStep()
     data object Done : InjectionStep()
     data class Failed(val reason: String) : InjectionStep()
-    /** Reached only if the app gave up reconnecting - the router's own scheduler is still armed and will roll back on its own. */
     data object GaveUpWaiting : InjectionStep()
 }
 
@@ -30,23 +29,17 @@ const val MARKER_API_USERNAME = "cybermanager-api"
 class RouterInjectionManager {
 
     /**
-     * Uploads the injection script and triggers the reset. Returns as soon as
-     * the reset command has been sent - the router reboots from that point,
-     * this function does NOT wait for it to come back. Call [reconnectAndVerify]
-     * separately for that (the whole point of run-after-reset is the app may
-     * lose network connectivity during the gap).
-     *
-     * Assumes a backup was already taken (see RouterBackupManager) so
-     * [BACKUP_EXPORT_NAME] exists on the router's flash - that file is reused
-     * directly as the rollback source, no separate upload needed since files
-     * survive reset-configuration.
+     * Réutilise le client déjà présent dans [sessionManager] (celui ouvert au
+     * login) au lieu d'ouvrir une nouvelle connexion API. FTP reste séparé
+     * (protocole différent, pas de session à réutiliser).
      */
     suspend fun uploadAndReset(
         host: String,
         adminUsername: String,
         adminPassword: String,
         template: CyberTemplateParams,
-        backupPassword: String,
+        backupPassword: String?,
+        sessionManager: MikrotikSessionManager,
         onStep: (InjectionStep) -> Unit,
     ): Result<String> = withContext(Dispatchers.IO) {
 
@@ -54,21 +47,15 @@ class RouterInjectionManager {
 
         onStep(InjectionStep.UploadingScript)
 
-        // Detect the persistent flash/ folder (see RouterFileSystem.kt) so the
-        // injection script's own file, AND the rollback file it references,
-        // both live somewhere that survives the reboot we're about to trigger.
-        val flashPrefix = try {
-            val probe = MikrotikRawClient(null, host)
-            try {
-                if (!probe.login(adminUsername, adminPassword)) {
-                    val msg = "Authentification refusée"
-                    onStep(InjectionStep.Failed(msg))
-                    return@withContext Result.failure(IllegalStateException(msg))
-                }
-                detectFlashPrefix(probe)
-            } finally {
-                runCatching { probe.close() }
+        val client = sessionManager.client.value
+            ?: run {
+                val msg = "Aucune session active vers le routeur"
+                onStep(InjectionStep.Failed(msg))
+                return@withContext Result.failure(IllegalStateException(msg))
             }
+
+        val flashPrefix = try {
+            detectFlashPrefix(client)
         } catch (e: Exception) {
             val msg = "Connexion impossible: ${e.message ?: e.toString()}"
             onStep(InjectionStep.Failed(msg))
@@ -104,51 +91,32 @@ class RouterInjectionManager {
 
         onStep(InjectionStep.TriggeringReset)
         try {
-            val client = MikrotikRawClient(null, host)
-            try {
-                if (!client.login(adminUsername, adminPassword)) {
-                    val msg = "Authentification refusée avant le reset"
-                    onStep(InjectionStep.Failed(msg))
-                    return@withContext Result.failure(IllegalStateException(msg))
-                }
-
-                // This normally reboots the router immediately - if we get a
-                // clean reply back instead of the connection dying, check it:
-                // that means the router refused the command outright.
-                val resetReply = runCatching {
-                    client.execute(
-                        listOf(
-                            "/system/reset-configuration",
-                            "=keep-users=yes",
-                            "=no-defaults=yes",
-                            "=run-after-reset=$injectScriptName",
-                        )
+            val resetReply = runCatching {
+                client.execute(
+                    listOf(
+                        "/system/reset-configuration",
+                        "=keep-users=yes",
+                        "=no-defaults=yes",
+                        "=run-after-reset=$injectScriptName",
                     )
-                }.getOrNull()
+                )
+            }.getOrNull()
 
-                if (resetReply != null && isApiTrap(resetReply)) {
-                    val msg = "Le routeur a refusé le reset: ${apiTrapMessage(resetReply)}"
-                    onStep(InjectionStep.Failed(msg))
-                    return@withContext Result.failure(IllegalStateException(msg))
-                }
-            } finally {
-                runCatching { client.close() }
+            if (resetReply != null && isApiTrap(resetReply)) {
+                val msg = "Le routeur a refusé le reset: ${apiTrapMessage(resetReply)}"
+                onStep(InjectionStep.Failed(msg))
+                return@withContext Result.failure(IllegalStateException(msg))
             }
         } catch (_: Exception) {
-            // Expected: the connection dies as the router reboots.
+
+        } finally {
+            sessionManager.disconnect()
         }
 
         onStep(InjectionStep.WaitingForReboot)
         Result.success(apPassword)
     }
 
-    /**
-     * Polls until the marker account (created by the injection script)
-     * accepts a login and the marker note is present, or [timeoutSeconds]
-     * elapses. Tries both [host] (in case the router kept its IP) and the
-     * Mikrotik factory default 192.168.88.1 (in case reset restored it) on
-     * every attempt.
-     */
     suspend fun reconnectAndVerify(
         host: String,
         apPassword: String,
@@ -163,12 +131,6 @@ class RouterInjectionManager {
 
         onStep(InjectionStep.EnsuringWifiEnabled)
         wifiConnector.checkInterfaceStatus()
-        // Proceed regardless: on Android we may have only been able to prompt
-        // the user rather than confirm it's on; on desktop the check itself
-        // may be best-effort. Either way, trying to connect next is safe.
-        // Same here: don't bail out on Failed/Unsupported/TimedOut - the
-        // device might already be on the right network some other way (e.g.
-        // the user reconnected manually), so we still fall through to polling.
 
         val networkTarget = wifiConnector.lastConnectedNetworkTarget()
         val candidateHosts = listOf(host, "192.168.88.1").distinct()
